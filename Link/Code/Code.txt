@@ -1,0 +1,26 @@
+import glob
+import urllib.parse
+
+def create_file(n):
+    """Создает файл и записывает туда название папки и ссылки"""
+    with open(f'result.txt', 'a', encoding='utf-8') as file:
+        file.write(n + '\n')
+
+adress = input('Введите ссылку на папку: ')  # указываем путь к папкам
+folder_names = os.listdir(adress)  # создаем список названий папок
+
+#Удаляем старый файл, если он есть
+if os.path.exists("result.txt"):
+    os.remove("result.txt")
+
+for folder_name in folder_names:  # проходим циклом по каждой папке
+    print(folder_name)
+    create_file(str(folder_name))  # вызов функции создания файла
+    n = len(glob.glob1(f"{adress}/{folder_name}", "*.jpg"))  # считает количество фото в папке
+    folder_name_encoded = urllib.parse.quote(folder_name)
+    for j in range(1, n + 1):  # выводит ссылки на фотографии от 1 до n включительно
+        link = f'<Image url="http://7215.ru/{folder_name_encoded}/{j}.jpg" />'
+        create_file(str(link))
+        print(link)
+    print()
+    create_file('')  #Создает пробел между моделями

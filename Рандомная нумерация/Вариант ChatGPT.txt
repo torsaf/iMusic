@@ -1,0 +1,13 @@
+import os
+import random
+
+PATH = r'C:\Users\torsaf\Desktop\test\Резервная копия'
+
+for root, dirs, files in os.walk(PATH):
+    jpg_files = [f for f in files if os.path.splitext(f)[-1].lower() == '.jpg']
+    if len(jpg_files) < 2:
+        continue
+    random.shuffle(jpg_files)
+    for i, jpg_file in enumerate(jpg_files):
+        new_name = f"{i+1}.jpg"
+        os.rename(os.path.join(root, jpg_file), os.path.join(root, new_name))
