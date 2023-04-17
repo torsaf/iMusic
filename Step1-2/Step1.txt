@@ -23,8 +23,6 @@ if missing_files:
     print(input())
     sys.exit([0])
 
-
-
 class Vendor:
     def __init__(self, name, shortname, start, art, model, nal, opt, rrc, ext='xls', sheet_name=0):
         self.name = name
@@ -66,14 +64,15 @@ class Vendor:
         self.change_words(df)
 
     def change_words(self, df):
-        df = df.loc[(df['РРЦ'] != 'Уточняйте ') & (df['ОПТ'] != 'Уточняйте') & (df['РРЦ'] != 'Уточняйте')]
-        df = df.loc[(df['РРЦ'] != 'не для продажи в РФ') & (df['ОПТ'] != 'не для продажи в РФ')]
-        df = df.loc[(df['РРЦ'] != 'Çâîíèòå') & (df['ОПТ'] != 'Çâîíèòå')]
-        df = df.loc[(df['РРЦ'] != 0) & (df['ОПТ'] != 0)]
-        df = df.loc[(df['РРЦ'] != '0') & (df['ОПТ'] != '0')]
-        df = df.loc[(df['РРЦ'] != 'Звоните') & (df['ОПТ'] != 'Звоните')]
-        df = df.drop_duplicates('Артикул') #убирает дубликаты артикулов, т.к. такое встречается в прайсах.
-        self.change_type(df)
+        # Определяем списки значений, которые требуется исключить
+        exclude_values = ['Уточняйте ', 'Уточняйте', 'не для продажи в РФ', 'Çâîíèòå', '0', 'Звоните', 'витрина']
+        # Фильтруем DataFrame, используя значение включающего оператора "и" (&)
+        df = df.loc[~df['РРЦ'].isin(exclude_values) & ~df['ОПТ'].isin(exclude_values) & (df['РРЦ'] != 0) & (df['ОПТ'] != 0)]
+        df = df.loc[(df['Наличие'] != 'витрина') & (df['ОПТ'] != 'витрина')]
+        # Удаляем дубликаты
+        df = df.drop_duplicates('Артикул')
+        self.change_type(df)        
+        
 
     def change_type(self, df):
         df = df.fillna(0)
@@ -104,7 +103,7 @@ class Vendor:
         df.rename(columns={0: 'Номер в Avito - Id', 10: 'Название объявления - Title', 14: 'Склад', 15: 'Цена склада', 16: 'Attrade', 17: 'Slami', 18: 'Invask', 19: 'United'}, inplace=True)
         df['Итоговая цена'] = 0
         df.to_csv(Path(pathlib.Path.cwd(), "CSV", "General.csv"), sep=';', mode='w', index=False)
-
+           
 
 Attrade = Vendor('Attrade', 'ATT', 21, 1, 4, 7, 18, 11)
 Invask = Vendor('Invask', 'INV', 14, 0, 2, 8, 7, 6)
@@ -155,26 +154,28 @@ class Vendors:
         return df
     
     def forclients(df):
-        # этот блок с новой переменной tofile нужен для генерации файла Forclients, который используется для бота клиентов
-        tofile = df.copy(deep=True)
-        tofile = tofile[['Название объявления - Title', 'Склад', 'Цена склада', 'Итоговая цена', 'РРЦ']]
+        tofile = df.copy()
+        tofile = tofile.loc[
+            tofile['Итоговая цена'].fillna(0).astype(int) != 0,
+            ['Название объявления - Title', 'Склад', 'Цена склада', 'Итоговая цена', 'РРЦ']
+        ]
         tofile['Итоговая цена'] = tofile['Итоговая цена'].fillna(0).astype(int)
         tofile['РРЦ'] = tofile['РРЦ'].fillna(0).astype(int)
-        tofile.loc[((tofile['Склад'] == 1) | (tofile['Склад'] == '1')) & (~tofile['Цена склада'].isna()), 'Итоговая цена'] = tofile['Цена склада']
-        tofile.loc[((tofile['Склад'] == 3) | (tofile['Склад'] == '3')) & (tofile['Итоговая цена'] != 0), 'Итоговая цена'] = tofile['РРЦ']
+        tofile.loc[tofile['Склад'].isin([1, '1']) & (~tofile['Цена склада'].isna()), 'Итоговая цена'] = tofile['Цена склада']
+        tofile.loc[tofile['Склад'].isin([3, '3']) & (tofile['Итоговая цена'] != 0), 'Итоговая цена'] = tofile['РРЦ']
         tofile = tofile[['Название объявления - Title', 'Итоговая цена']]
-        tofile = tofile.loc[tofile['Итоговая цена'] != 0]
-        tofile.to_csv(Path(pathlib.Path.cwd(), "CSV", "!Forclients.csv"), sep=';', mode='w', index=False)
-        
+        with pathlib.Path("CSV", "!Forclients.csv").open("w", newline="", encoding="utf-8") as f:
+            tofile.to_csv(f, sep=";", index=False)      
+   
     def one_zero(df):
-        #Просле процентовки необходимо поставить заменить цены на 1, там где нельзя ставить цены и проставить 1 и его цену, если товар есть на нашем складе.
-        df.loc[((df['Склад'] == 1) | (df['Склад'] == '1')) & (df['Цена склада'].isna()), 'Итоговая цена'] = 1
-        df.loc[((df['Склад'] == 1) | (df['Склад'] == '1')) & (~df['Цена склада'].isna()), 'Итоговая цена'] = df['Цена склада']
-        df.loc[((df['Склад'] == 2) | (df['Склад'] == '2')) & (df['Итоговая цена'] != 0), 'Итоговая цена'] = 1
-        df.loc[((df['Склад'] == 3) | (df['Склад'] == '3')) & (df['Итоговая цена'] != 0), 'Итоговая цена'] = df['РРЦ']
-        #Удаляем Последний столбец РРЦ, из которого мы берем РРЦ цену, Если в поле СКЛАД стоит значение 3.
-        df = df.drop(columns=['РРЦ'])
-        return df
+        # Просле процентовки необходимо поставить заменить цены на 1, там где нельзя ставить цены и проставить 1 и его цену, если товар есть на нашем складе.
+        df.loc[df['Склад'].isin([1, '1']) & (df['Цена склада'].isna()), 'Итоговая цена'] = 1
+        df.loc[df['Склад'].isin([1, '1']) & (~df['Цена склада'].isna()), 'Итоговая цена'] = df['Цена склада']
+        df.loc[df['Склад'].isin([2, '2']) & (df['Итоговая цена'] != 0), 'Итоговая цена'] = 1
+        df.loc[df['Склад'].isin([3, '3']) & (df['Итоговая цена'] != 0), 'Итоговая цена'] = df['РРЦ']
+        # Удаление последнего столбца РРЦ, из которго мы берем РРЦ цену, Если в поле СКЛАД стоит значение 3.
+        df.drop(columns=['РРЦ'], inplace=True)
+        return df    
     
     def style_specific_cell(x):
         color = 'background-color: yellow'
@@ -183,11 +184,9 @@ class Vendors:
         return df1
 
     def printtofile(df):
-#         df.to_excel(r'C:\Users\torsaf\Desktop\mydata.xlsx')
         writer = pd.ExcelWriter(Path(pathlib.Path.cwd(), "!Сводная таблица.xlsx"), engine='xlsxwriter')
         df.to_excel(writer, sheet_name='Sheet1', index=False)
         writer.save()
-
 
 Attrade = Vendors('Attrade', 'att')
 Slami = Vendors('Slami', 'slm')
