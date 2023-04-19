@@ -1,3 +1,4 @@
+%%time
 import pandas as pd
 import openpyxl
 import numpy as np
@@ -9,7 +10,7 @@ import os
 
 #Проверяем прайсы на их наличие и правильное написание
 directory = Path(pathlib.Path.cwd(), "Price_List")
-files_to_check = ['Attrade.xls', 'Invask.xls', 'Slami.xls', 'United.xls']  # Укажите имена файлов, которые вы хотите проверить
+files_to_check = ['Attrade.xls', 'Invask.xls', 'Slami.xls', 'United.xls']
 
 missing_files = []
 
@@ -37,27 +38,21 @@ class Vendor:
         self.sheet_name = sheet_name
         
     def delit_CSV():
-        #Удаляем старые файлы, что бы заполнить их заново
+        """Удаляем старые файлы, что бы заполнить их заново"""
         if os.path.exists(Path(pathlib.Path.cwd(), "CSV", "!BD.csv")):
             os.remove(Path(pathlib.Path.cwd(), "CSV", "!BD.csv"))
         if os.path.exists(Path(pathlib.Path.cwd(), "CSV", "!Name.csv")):             
             os.remove(Path(pathlib.Path.cwd(), "CSV", "!Name.csv"))
 
-    def open_csv_file(self):
-        df = pd.read_csv(Path(pathlib.Path.cwd(), "Price_List", f"{self.name}.{self.ext}"), encoding='cp1252', dtype=object, sep=';', header=None).loc[self.start:, :]
-        self.re_name(df)
-
     def open_xls_file(self):
+        """открывает XLS-файл"""
         assert os.path.exists(pathlib.Path.cwd() /'Price_List'/ f"{self.name}.{self.ext}"), f'Проблема с файлом {self.name}.{self.ext}'
         df = pd.read_excel(Path(pathlib.Path.cwd(), "Price_List", f"{self.name}.{self.ext}"), sheet_name=self.sheet_name, header=None).loc[self.start:, :]
         df = df.fillna(0)
         self.re_name(df)
 
-    def create_column(self, df):
-        df[self.column] = (df[self.from_opt] * self.margin).astype(int)
-        self.re_name(df)
-
     def re_name(self, df):
+        """Переименовывает столбцы в нужный вид"""
         df.rename(columns={self.art: 'Артикул', self.model: 'Модель', self.nal: 'Наличие', self.opt: 'ОПТ', self.rrc: 'РРЦ'}, inplace=True)
         df['Поставщик'] = self.name
         df = df[['Поставщик', 'Артикул', 'Модель', 'Наличие', 'ОПТ', 'РРЦ']]
@@ -73,29 +68,32 @@ class Vendor:
         df = df.drop_duplicates('Артикул')
         self.change_type(df)        
         
-
     def change_type(self, df):
+        """Убираем строки в ячейках которых, всякий мусор"""
         df = df.fillna(0)
-        df['ОПТ'] = df['ОПТ'].astype(float).astype(int)
-        df['РРЦ'] = df['РРЦ'].astype(float).astype(int)
+        df[['ОПТ', 'РРЦ']] = df[['ОПТ', 'РРЦ']].astype(float).astype(int)
         df['Артикул'] = df['Артикул'].apply(lambda x: str(x).strip())
         df['Модель'] = df['Модель'].apply(lambda x: str(x).strip())
         self.tocsv(df)
         self.create_BD_file(df)
 
     def tocsv(self, df):
+        """Сохраняет в CSV Файл всех поставщиков после того, как мы прибрались в столбцах"""
         df.to_csv(Path(pathlib.Path.cwd(), "CSV", f"{self.name}.csv"), sep=';', mode='w', index=False)
 
     def create_BD_file(self, df):
+        """Создаёт файл !BD"""
         df['Поставщик'] = self.shortname
         df.to_csv(Path(pathlib.Path.cwd(), "CSV", "!BD.csv"), sep=';', mode='a', index=False)
 
     def create_Name_file():
+        """Берёт из главного файла название и все артикулы и сохраняет в файл !Name"""
         df1 = pd.read_excel(Path(pathlib.Path.cwd(), "!Товары.xlsx"), sheet_name='General', header=None).iloc[2:, 10:31]
         df1 = df1[[10, 14, 15, 16, 17, 18, 19]]
         df1.to_csv(Path(pathlib.Path.cwd(), "CSV", "!Name.csv"), index=False)
 
     def create_general_file():
+        """Из главного файла берет большинство столбцов и сохраняет в файл General, для второй части кода"""
         df = pd.read_excel(Path(pathlib.Path.cwd(), "!Товары.xlsx"), header=None).loc[1:, :]
         df = df[[0, 10, 14, 15, 16, 17, 18, 19, 20]]
         df[[0, 10, 14, 15, 16, 17, 18, 19]] = df[[0, 10, 14, 15, 16, 17, 18, 19]].astype(str)
@@ -126,11 +124,12 @@ class Vendors:
         self.short_name = short_name
 
     def create_data_frame():
+        """Создаём фрейм из файла General"""
         df = pd.read_csv(Path(pathlib.Path.cwd(), "CSV", "General.csv"), sep=';')
         return df
 
     def create_vendors(self, df):
-        # Создаём переменную поставщика и оставляем только нужные три столбца
+        """Создаём переменную поставщика и оставляем только нужные три столбца, а для uni 4 столбца"""
         if self.short_name == 'uni':
             self.short_name = pd.read_csv(Path(pathlib.Path.cwd(), "CSV", f"{self.name}.csv"), sep=';')[['Артикул', 'Наличие', 'ОПТ', 'РРЦ']].astype(str)
         else:
@@ -146,6 +145,7 @@ class Vendors:
         return df
     
     def generate_price(df):
+        """Процентовка, наценка, округление"""
         df["Итоговая цена"] = df.loc[:,'Цена Attrade':'Цена United'].apply(pd.to_numeric, errors='coerce').astype('Int64').min(axis=1, numeric_only=True).fillna(0)
         edges = [0, 10000, 20000, 50000, 100000, np.inf] # интервалы от и до. Cправа бесконечность                                                 
         pcts = iter([22, 15, 15, 15, 11])                # проценты. количество должно совпадать с количеством интервалов
@@ -154,6 +154,7 @@ class Vendors:
         return df
     
     def forclients(df):
+        """Генерируем файл forclients"""
         tofile = df.copy()
         tofile = tofile.loc[
             tofile['Итоговая цена'].fillna(0).astype(int) != 0,
@@ -178,12 +179,14 @@ class Vendors:
         return df    
     
     def style_specific_cell(x):
+        """Красим в желтый ячейку нужного столбца"""
         color = 'background-color: yellow'
         df1 = pd.DataFrame('', index=x.index, columns=x.columns)
         df1.iloc[0, 9] = color
         return df1
 
     def printtofile(df):
+        """Сохраняем результат в !Сводная таблица"""
         writer = pd.ExcelWriter(Path(pathlib.Path.cwd(), "!Сводная таблица.xlsx"), engine='xlsxwriter')
         df.to_excel(writer, sheet_name='Sheet1', index=False)
         writer.save()
@@ -198,7 +201,6 @@ df = Attrade.create_vendors(df)
 df = Slami.create_vendors(df)
 df = Invask.create_vendors(df)
 df = United.create_vendors(df)
-
 
 Vendors.generate_price(df)
 Vendors.forclients(df)
