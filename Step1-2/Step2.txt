@@ -1,9 +1,28 @@
 # Импортируем необходимые модули
 import pandas as pd
 from pathlib import Path
+import pathlib
+import os
+import sys
+
+# Получаем текущую директорию
+dir_path = pathlib.Path.cwd()
+
+# Составляем путь до файла
+file_path = dir_path / "!Товары.xlsm"
+
+# Проверяем наличие файла и выводим сообщение
+if file_path.is_file() == False:
+    print("Файл '!Товары.xlsm' не найден")
+    input()
+    sys.exit([0])
+  
+# Импортируем необходимые модули
+import pandas as pd
+from pathlib import Path
 
 # Указываем пути к файлам
-path = Path.cwd() / "!Товары.xlsx"
+path = Path.cwd() / "!Товары.xlsm"
 path_xml = Path.cwd() / "XML.xml"
 
 # Читаем XLSX-файл и выбираем нужные столбцы
@@ -46,4 +65,4 @@ b = '\n</Ads>'
 
 # Записываем данные в XML-файл
 with open(path_xml, "w", encoding="utf-8") as h:
-    h.write(a + df.to_xml() + b)
+    h.write(a + df.to_xml() + b)  

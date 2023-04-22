@@ -9,7 +9,7 @@ import sys
 import os
 
 #Проверяем прайсы на их наличие и правильное написание
-directory = Path(pathlib.Path.cwd(), "Price_List")
+directory = Path(pathlib.Path.cwd(), "Prices")
 files_to_check = ['Attrade.xls', 'Invask.xls', 'Slami.xls', 'United.xls']
 
 missing_files = []
@@ -46,8 +46,8 @@ class Vendor:
 
     def open_xls_file(self):
         """открывает XLS-файл"""
-        assert os.path.exists(pathlib.Path.cwd() /'Price_List'/ f"{self.name}.{self.ext}"), f'Проблема с файлом {self.name}.{self.ext}'
-        df = pd.read_excel(Path(pathlib.Path.cwd(), "Price_List", f"{self.name}.{self.ext}"), sheet_name=self.sheet_name, header=None).loc[self.start:, :]
+        assert os.path.exists(pathlib.Path.cwd() /'Prices'/ f"{self.name}.{self.ext}"), f'Проблема с файлом {self.name}.{self.ext}'
+        df = pd.read_excel(Path(pathlib.Path.cwd(), "Prices", f"{self.name}.{self.ext}"), sheet_name=self.sheet_name, header=None).loc[self.start:, :]
         df = df.fillna(0)
         self.re_name(df)
 
@@ -88,13 +88,13 @@ class Vendor:
 
     def create_Name_file():
         """Берёт из главного файла название и все артикулы и сохраняет в файл !Name"""
-        df1 = pd.read_excel(Path(pathlib.Path.cwd(), "!Товары.xlsx"), sheet_name='General', header=None).iloc[2:, 10:31]
+        df1 = pd.read_excel(Path(pathlib.Path.cwd(), "!Товары.xlsm"), sheet_name='General', header=None).iloc[2:, 10:31]
         df1 = df1[[10, 14, 15, 16, 17, 18, 19]]
         df1.to_csv(Path(pathlib.Path.cwd(), "CSV", "!Name.csv"), index=False)
 
     def create_general_file():
         """Из главного файла берет большинство столбцов и сохраняет в файл General, для второй части кода"""
-        df = pd.read_excel(Path(pathlib.Path.cwd(), "!Товары.xlsx"), header=None).loc[1:, :]
+        df = pd.read_excel(Path(pathlib.Path.cwd(), "!Товары.xlsm"), header=None).loc[1:, :]
         df = df[[0, 10, 14, 15, 16, 17, 18, 19, 20]]
         df[[0, 10, 14, 15, 16, 17, 18, 19]] = df[[0, 10, 14, 15, 16, 17, 18, 19]].astype(str)
         df[[16, 17, 18, 19]] = df[[16, 17, 18, 19]].apply(lambda x: x.str.strip())
@@ -181,16 +181,16 @@ class Vendors:
         df.drop(columns=['РРЦ'], inplace=True)
         return df    
     
-    def style_specific_cell(x):
-        """Красим в желтый ячейку нужного столбца"""
-        color = 'background-color: yellow'
-        df1 = pd.DataFrame('', index=x.index, columns=x.columns)
-        df1.iloc[0, 9] = color
-        return df1
+#     def style_specific_cell(x):
+#         """Красим в желтый ячейку нужного столбца"""
+#         color = 'background-color: yellow'
+#         df1 = pd.DataFrame('', index=x.index, columns=x.columns)
+#         df1.iloc[0, 9] = color
+#         return df1
 
     def printtofile(df):
-        """Сохраняем результат в !Сводная таблица"""
-        writer = pd.ExcelWriter(Path(pathlib.Path.cwd(), "!Сводная таблица.xlsx"), engine='xlsxwriter')
+        """Сохраняем результат в Сводная таблица"""
+        writer = pd.ExcelWriter(Path(pathlib.Path.cwd(), "CSV", "Сводная таблица.xlsx"), engine='xlsxwriter')
         df.to_excel(writer, sheet_name='Sheet1', index=False)
         writer.save()
 
@@ -208,6 +208,7 @@ df = United.create_vendors(df)
 Vendors.generate_price(df)
 Vendors.forclients(df)
 Vendors.one_zero(df)
-df = df.style.apply(Vendors.style_specific_cell, axis=None)
+# df = df.style.apply(Vendors.style_specific_cell, axis=None)
 Vendors.printtofile(df)
+
 
