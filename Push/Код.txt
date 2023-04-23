@@ -1,0 +1,81 @@
+import io
+import os
+import zipfile
+import requests
+import pathlib
+from pathlib import Path
+from zipfile import ZipFile
+from urllib import request
+import wget
+
+# Список ссылок поставщиков
+links = {
+  'Attrade': 'https://attrade.ru/pr30fe16ff-24c4-4bd1-be40-69cbd4593924/TempFolder/Price_Stock.zip',
+  'Invask': 'https://invask.ru/downloads/Ostatki_tovara.xls?v=1',
+  'Slami': 'http://www.slami.ru/info/dilprice_slami.zip',
+  'United': 'https://united-music.by/dealers/UM_PRICE_RUR.xls'
+}
+
+def Attrade():
+    #Удаляем старый файл, если он есть
+    if os.path.exists('Attrade.xls'):
+        os.remove(Path(pathlib.Path.cwd(), 'Attrade.xls'))
+    #Скачиваем прайс лист и разархивируем его    
+    r = requests.get(links['Attrade'])
+    with r, zipfile.ZipFile(io.BytesIO(r.content)) as archive:
+        archive.extractall() #В скобочках можем указать папку для сохранения. К примеру 'price list'
+        os.rename('Price_Stock.XLS', 'Attrade.xls')
+    
+def Invask():    
+    if os.path.exists('Invask.xls'):
+        os.remove(Path(pathlib.Path.cwd(), 'Invask.xls'))
+    filename = request.urlopen(request.Request(links['Invask'])).info().get_filename()
+    wget.download(links['Invask'])
+    os.rename(filename, 'Invask.xls')
+
+def Slami():
+    #Удаляем старый файл, если он есть
+    if os.path.exists('Slami.xls'):
+        os.remove(Path(pathlib.Path.cwd(), 'Slami.xls'))
+    wget.download(links['Slami']) #Скачиваем архив и циклом по нему пробегаемся
+    name1 = ''
+    with ZipFile('dilprice_slami.zip', 'r') as myzip:               
+        for item in myzip.namelist():                            #Смотрим сколько файлов в нем. Т.к. там один файл то вытягиваем название и запихиваем в переменную name
+            name1 = item
+            break                                                #Прерываем цикл что бы переменная не перезаписалась на пустую, т.к. больше файлов нет.
+    os.remove('dilprice_slami.zip')                              #Удаляем этот ахрив
+    #Скачиваем прайс лист и разархивируем его
+    r = requests.get(links['Slami'])       
+    with r, zipfile.ZipFile(io.BytesIO(r.content)) as archive:
+        archive.extractall() #В скобочках можем указать папку для сохранения. К примеру 'price list'
+        os.rename(name1, 'Slami.xls') 
+    
+def United():
+    #Удаляем старый файл, если он есть
+    if os.path.exists('United.xls'):
+        os.remove(Path(pathlib.Path.cwd(), 'United.xls'))
+    #Скачиваем файл и переименовываем
+    wget.download(links['United'])
+    os.rename('UM_PRICE_RUR.xls', 'United.xls')  
+
+# Проверяем каждую ссылку поставщика и вызываем функцию соответствующего поставщика, если ссылка работает
+for supplier, link in links.items():
+  try:
+    response = requests.get(link)
+    response.raise_for_status()
+
+    # Вызываем функцию соответствующего поставщика
+    if supplier == 'Attrade':
+        Attrade()
+    elif supplier == 'Invask':
+        Invask()
+    elif supplier == 'Slami':
+        Slami()
+    elif supplier == 'United':
+        United()
+
+  except (requests.exceptions.RequestException, FileNotFoundError) as e:
+        if isinstance(e, FileNotFoundError):
+            print(f'Файл ссылки поставщика {supplier} не найден')
+        else:
+            print(f'Ссылка поставщика {supplier} не работает', end='\n')
