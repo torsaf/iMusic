@@ -1,0 +1,33 @@
+import pathlib
+from pathlib import Path
+import sys
+import os
+import step1
+import step2
+
+# Проверяем прайсы на их наличие и правильное написание
+directory = Path(pathlib.Path.cwd(), "Prices")
+files_to_check = ['Attrade.xls', 'Invask.xls', 'Slami.xls', 'United.xls']
+
+missing_files = []
+
+for file_name in files_to_check:
+    file_path = os.path.join(directory, file_name)
+    if not os.path.exists(file_path):
+        missing_files.append(file_name)
+
+if missing_files:
+    print(f"Проблема с {', '.join(missing_files)}")
+    print(input())
+    sys.exit([0])
+
+
+step1.go_step1()
+step2.go_step2()
+
+print('Все ок! Нажми Enter ...')
+input()
+
+
+
+
