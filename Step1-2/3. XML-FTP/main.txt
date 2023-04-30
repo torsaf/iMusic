@@ -1,24 +1,14 @@
-import pathlib
-import sys
 import reserve
 import FTP
 import XML
 
-# Получаем текущую директорию
-dir_path = pathlib.Path.cwd()
 
-# Составляем путь до файла
-file_path = dir_path / "!Товары.xlsm"
-
-# Проверяем наличие файла и выводим сообщение
-if file_path.is_file() == False:
-    print("Файл '!Товары.xlsm' не найден")
+try:
+    XML.from_file_to_xml()
+    FTP.files_to_ftp()
+    reserve.reserve_file()
+    print('Все ок! Нажми Enter для выхода')
     input()
-    sys.exit([0])
-
-XML.from_file_to_xml()
-FTP.files_to_ftp()
-reserve.reserve_file()
-
-print('Все ок! Нажмите Enter ...')
-input()
+except Exception as e:
+    print(f"Произошла ошибка : {e}")
+    input('Нажми Enter для выхода')

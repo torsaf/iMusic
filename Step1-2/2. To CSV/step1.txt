@@ -2,6 +2,7 @@ import pandas as pd
 import pathlib
 from pathlib import Path
 import os
+import xlrd
 
 
 def go_step1():
@@ -27,9 +28,13 @@ def go_step1():
 
         def open_xls_file(self):
             """открывает XLS-файл"""
-            assert os.path.exists(pathlib.Path.cwd() / 'Prices' / f"{self.name}.{self.ext}"), f'Проблема с файлом {self.name}.{self.ext}'
-            df = pd.read_excel(Path(pathlib.Path.cwd(), "Prices", f"{self.name}.{self.ext}"), sheet_name=self.sheet_name, header=None).loc[self.start:, :]
-            df = df.fillna(0)
+            if self.name == 'Invask':
+                file_path = f"./Prices/{self.name}.{self.ext}"
+                # откройте файл с помощью xlrd и прочитайте файл с помощью Pandas
+                df = pd.read_excel(xlrd.open_workbook(file_path, encoding_override="windows-1251"), header=None).fillna(0).loc[self.start:, :]
+            else:
+                df = pd.read_excel(Path(pathlib.Path.cwd(), "Prices", f"{self.name}.{self.ext}"), sheet_name=self.sheet_name, header=None).loc[self.start:, :]
+                df = df.fillna(0)
             self.re_name(df)
 
         def re_name(self, df):

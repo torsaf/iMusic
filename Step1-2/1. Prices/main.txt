@@ -1,14 +1,11 @@
-import step1
-import step2
-import check
+import push
 
 try:
-    check.check_files()
-    check.check_folder_csv()
-    step1.go_step1()
-    step2.go_step2()
+    push.download_prices()
+    print()
     print('Все ок! Нажми Enter для выхода')
     input()
 except Exception as e:
+    print()
     print(f"Произошла ошибка : {e}")
     input('Нажми Enter для выхода')
