@@ -1,5 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
+import pathlib
+import os
 import check
 import step1
 import step2
@@ -10,7 +12,7 @@ import reserve
 
 # Создаем главное окно
 window = tk.Tk()
-window.title("Menu")
+window.title("Program for Avito")
 
 # Рассчитываем позиции X и Y для расположения окна в центре экрана
 screen_width = window.winfo_screenwidth()
@@ -29,9 +31,11 @@ window.resizable(False, False)
 def button_handler1():
     try:
         push.download_prices()
-        messagebox.showinfo("Успешное выполнение", "Все ок!")
+        messagebox.showinfo("Все ок", "Успешно выполнено!")
     except Exception as e:
         messagebox.showerror("Ошибка", f"Произошла ошибка : {e}")
+
+    os.startfile(f'{pathlib.Path.cwd()}/Prices/United.xls')
 
 
 def button_handler2():
@@ -40,7 +44,7 @@ def button_handler2():
         check.check_folder_csv()
         step1.go_step1()
         step2.go_step2()
-        messagebox.showinfo("Успешное выполнение", "Все ок!")
+        messagebox.showinfo("Все ок", "Успешно выполнено!")
     except Exception as e:
         messagebox.showerror("Ошибка", f"Произошла ошибка : {e}")
 
@@ -50,7 +54,7 @@ def button_handler4():
         XML.from_file_to_xml()
         FTP.files_to_ftp()
         reserve.reserve_file()
-        messagebox.showinfo("Успешное выполнение", "Все ок!")
+        messagebox.showinfo("Все ок", "Успешно выполнено!")
     except Exception as e:
         messagebox.showerror("Ошибка", f"Произошла ошибка : {e}")
 
@@ -66,9 +70,9 @@ button2 = tk.Button(frame2, text='Выполнить', command=button_handler2)
 label2 = tk.Label(frame2, text="Преобразовываем всё в CSV формат \n и генерируем сводную таблицу", borderwidth=3, highlightthickness=6)
 label2.config(width=40)
 
-frame3 = tk.LabelFrame(window, text="3. Обновление цен", font=('Segoe UI', 13, 'bold'))
-button3 = tk.Button(frame3, text='                     ', command=lambda: None)
-label3 = tk.Label(frame3, text="Необходимо зайти в файл !Товары и \n нажать кнопку 'Обновить цены'", borderwidth=3, highlightthickness=6)
+frame3 = tk.LabelFrame(window, text="3. Обновить цены", font=('Segoe UI', 13, 'bold'))
+button3 = tk.Button(frame3, text='   Открыть   ', command=lambda: os.startfile('!Товары.xlsm'))
+label3 = tk.Label(frame3, text="Необходимо в файле !Товары нажать \nкнопку 'Обновить цены'", borderwidth=3, highlightthickness=6)
 label3.config(width=40)
 
 frame4 = tk.LabelFrame(window, text="4. Сохранить", font=('Segoe UI', 13, 'bold'))
