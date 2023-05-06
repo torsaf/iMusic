@@ -46,12 +46,13 @@ def button_handler1():
     os.startfile(f'{pathlib.Path.cwd()}/Prices/United.xls')
 
 
+
 def button_handler2():
     try:
-        check.check_files()
+        check.check_prices()
         check.check_folder_csv()
-        step1.go_step1()
-        step2.go_step2()
+        step1.all_to_csv()
+        step2.generate_new_prices()
         messagebox.showinfo("Все ок", "Успешно выполнено!")
     except Exception as e:
         messagebox.showerror("Ошибка", f"Произошла ошибка : {e}")
@@ -59,9 +60,9 @@ def button_handler2():
 
 def button_handler4():
     try:
-        XML.from_file_to_xml()
-        FTP.files_to_ftp()
-        reserve.reserve_file()
+        XML.to_xml_file()
+        FTP.to_ftp()
+        reserve.to_reserve_file()
         messagebox.showinfo("Все ок", "Успешно выполнено!")
     except Exception as e:
         messagebox.showerror("Ошибка", f"Произошла ошибка : {e}")
