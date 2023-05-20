@@ -76,12 +76,13 @@ def go_step1():
             """Берёт из главного файла название и все артикулы и сохраняет в файл !Name"""
             df1 = pd.read_excel(Path(pathlib.Path.cwd(), "!Товары.xlsm"), sheet_name='General', header=None).iloc[2:, 10:31]
             df1 = df1[[10, 14, 15, 16, 17, 18, 19]]
+            df1 = df1.applymap(lambda x: x.strip() if isinstance(x, str) else x)
             df1.to_csv(Path(pathlib.Path.cwd(), "CSV", "!Name.csv"), index=False)
 
         def create_general_file():
             """Из главного файла берет большинство столбцов и сохраняет в файл General, для второй части кода"""
             df = pd.read_excel(Path(pathlib.Path.cwd(), "!Товары.xlsm"), header=None).loc[1:, :]
-            df = df[[0, 10, 14, 15, 16, 17, 18, 19, 20]]
+            df = df[[0, 10, 14, 15, 16, 17, 18, 19]]
             df[[0, 10, 14, 15, 16, 17, 18, 19]] = df[[0, 10, 14, 15, 16, 17, 18, 19]].astype(str)
             df[[16, 17, 18, 19]] = df[[16, 17, 18, 19]].apply(lambda x: x.str.strip())
             df.rename(columns={0: 'Номер в Avito - Id', 10: 'Название объявления - Title', 14: 'Склад', 15: 'Цена склада', 16: 'Attrade', 17: 'Slami', 18: 'Invask', 19: 'United'}, inplace=True)
