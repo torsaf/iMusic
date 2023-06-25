@@ -7,6 +7,75 @@ import pandas as pd
 
 bot = telebot.TeleBot("6065379061:AAE1oFujbxtkeeVmP-OyGNo-1aAJMZ8_onA")
 
+def last_line(x):
+    with open("!Forclients.csv", encoding='utf-8') as t_file:
+        file_reader = csv.reader(t_file, delimiter=';')
+        for row in file_reader:
+            if x.lower() in row[0].lower():
+                return row[1]
+    return "Цена не найдена"
+
+def open_file_for_clients(message):
+    with open("!Forclients.csv", encoding='utf-8') as my_file:
+        file_reader = csv.reader(my_file, delimiter=';')
+        productname = [row for row in file_reader if message.text.lower()[1:].strip() in row[0].lower().rstrip()]
+    productname.sort(key=lambda t: int(t[1]))
+    for i in productname:
+        bot.send_message(message.chat.id, f'<b>{i[0]}</b>: {i[1]} р.', parse_mode='html')
+    if len(productname) == 0:
+        bot.send_message(message.chat.id,
+                         'Такого товара нет в базе 🤔 или Вы не верно ввели название. Попробуйте указать только бренд искомого товара или 1-2 ключевых слов (как на авито!)',
+                         parse_mode='html')
+    return bot.send_message(message.chat.id, f'✅Найдено результатов: {len(productname)}', parse_mode='html')
+
+def open_files_name_bd(message):
+    productname = []
+    article = []
+    count = 0
+    found = False
+    with open("!Name.csv", encoding='utf-8') as r_file:
+        file_reader = csv.reader(r_file)
+        for row in file_reader:
+            if message.text.lower().rstrip() in row[0].lower().rstrip():
+                result = list(filter(None, row[1:]))
+                article.append(result)
+                productname.append(row[0])
+                count += 1
+                found = True
+                if count >= 20:
+                    bot.send_message(message.chat.id, 'Товаров слишком много. Вывожу несколько ...', parse_mode='html')
+                    break
+        if not found:
+            bot.send_message(message.chat.id, 'Хм.. Какая то ошибка 🤔', parse_mode='html')
+    data = {}
+    with open("!BD.csv", encoding='utf-8') as t_file:
+        file_reader = csv.reader(t_file, delimiter=';')
+        for row in file_reader:
+            if row[1] not in data:
+                data[row[1]] = []
+            data[row[1]].append([row[0], row[3], row[4], row[5]])
+
+    for num in range(len(productname)):
+        lst = [['----', '-----', '---', '-----', '-----']]
+        for a in article[num]:
+            if a in data:
+                lst += [[a] + i for i in data[a]]
+
+        df = pd.DataFrame(lst, columns=['', 'арт', 'нал', 'опт', 'ррц'])
+        df = df.to_string(index=False)
+
+        if len(df) > 53:  # это условие не выводит пустые поисковые значения, если товары не были найдены в прайсе поставщика
+            bot.send_message(message.chat.id, f'<b>{productname[num]}</b>' + '\n\n' + f'<pre>{df}</pre>' + '\n\n' + f'<b>Цена на Avito:</b> {last_line(productname[num])}', parse_mode='html')  # Выводим наименование позиции с двумя пропусками и дата фрейм
+
+        else:
+            count -= 1
+    keyboard = types.InlineKeyboardMarkup(row_width=4)
+    url_button1 = types.InlineKeyboardButton(text="Trade", url="https://attrade.ru/catalog/")
+    url_button2 = types.InlineKeyboardButton(text="Invask", url="https://invask.ru/partner/catalog/")
+    url_button3 = types.InlineKeyboardButton(text="Slami", url="https://dealer.slami.ru/")
+    url_button4 = types.InlineKeyboardButton(text="United", url="https://united-music.ru/ru/")
+    keyboard.add(url_button1, url_button2, url_button3, url_button4)
+    bot.send_message(message.chat.id, '✅ Найдено результатов: ' + f'<b>{count}</b>', reply_markup=keyboard, parse_mode='html')
 
 @bot.message_handler(commands=['start'])
 def process_start_command(message: types.Message):
@@ -92,63 +161,9 @@ def answer(call):
 @bot.message_handler(content_types=["text"])
 def price_list(message):
     if message.text.startswith('.') or message.text.startswith('. '):
-        productname = []
-        with open("!Forclients.csv", encoding='utf-8') as my_file:
-            file_reader = csv.reader(my_file, delimiter=';')
-            for row in file_reader:
-                if message.text.lower()[1:].strip() in row[0].lower().rstrip():
-                    productname.append(row)
-        productname.sort(key=lambda t: int(t[1]))
-        for i in productname:
-            bot.send_message(message.chat.id, f'<b>{i[0]}</b>: {i[1]} р.', parse_mode='html')
-        if len(productname) == 0:
-            bot.send_message(message.chat.id,
-                             'Такого товара нет в базе 🤔 или Вы не верно ввели название. Попробуйте указать только бренд искомого товара или 1-2 ключевых слов (как на авито!)',
-                             parse_mode='html')
-        bot.send_message(message.chat.id, f'✅Найдено результатов: {len(productname)}', parse_mode='html')
+        open_file_for_clients(message)
     else:
-        productname = []
-        article = []
-        count = 0
-        with open("!Name.csv", encoding='utf-8') as r_file:  # Открываем файл name
-            file_reader = csv.reader(r_file)  # Присваиваем этому файлу переменную
-            for row in file_reader:
-                if message.text.lower().rstrip() in row[0].lower().rstrip():
-                    result = [i for i in row if i != ''][1:]
-                    article.append(result)
-                    productname.append(row[0])
-                    count += 1
-                    if len(productname) >= 20:
-                        bot.send_message(message.chat.id, 'Товаров слишком много. Вывожу несколько ...', parse_mode='html')
-                        break
-            if productname == []:
-                bot.send_message(message.chat.id, 'Хм.. Какая то ошибка 🤔', parse_mode='html')
-        for num in range(len(productname)):
-            with open("!BD.csv", encoding='utf-8') as t_file:
-                file_reader = csv.reader(t_file)
-                lst = [['----', '-----', '---', '-----', '-----']]
-                for row in file_reader:
-                    for i in article[num]:
-                        if i == row[1]:
-                            lst.append([row[0] + ':', row[1], row[3], row[4], row[5]])
-
-            df = pd.DataFrame(lst, columns=['', 'арт', 'нал', 'опт', 'ррц'])
-            df = df.to_string(index=False)
-
-            if len(df) > 53:  # это условие не выводит пустые поисковые значения, если товары не были найдены в прайсе поставщика
-                bot.send_message(message.chat.id, f'<b>{productname[num]}</b>' + '\n\n' + f'<pre>{df}</pre>',
-                                 parse_mode='html')  # Выводим наименование позиции с двумя пропусками и дата фрейм
-            else:
-                count -= 1
-        keyboard = types.InlineKeyboardMarkup(row_width=5)
-        url_button1 = types.InlineKeyboardButton(text="Trade", url="https://attrade.ru/catalog/")
-        url_button2 = types.InlineKeyboardButton(text="Invask", url="https://invask.ru/partner/catalog/")
-        url_button3 = types.InlineKeyboardButton(text="Slami", url="https://dealer.slami.ru/")
-        url_button4 = types.InlineKeyboardButton(text="United", url="https://united-music.ru/ru/")
-        keyboard.add(url_button1, url_button2, url_button3, url_button4)
-        bot.send_message(message.chat.id, '✅ Найдено результатов: ' + f'<b>{count}</b>', reply_markup=keyboard,
-                         parse_mode='html')
-
+        open_files_name_bd(message)
 
 while True:
     try:
